@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Delay Minutes Per Day</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        #chart {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        var chartDom = document.getElementById('chart');
+        var myChart = echarts.init(chartDom);
+
+        var option = {
+            title: {
+                text: 'Total Flight Delay Minutes Per Day in January 2023 (OKC)'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            xAxis: {
+                type: 'category',
+                data: ["2023-01-01","2023-01-02","2023-01-03","2023-01-04","2023-01-05","2023-01-06","2023-01-07","2023-01-08","2023-01-09","2023-01-10","2023-01-11","2023-01-12","2023-01-13","2023-01-14","2023-01-15","2023-01-16","2023-01-17","2023-01-18","2023-01-19","2023-01-20","2023-01-21","2023-01-22","2023-01-23","2023-01-24","2023-01-25","2023-01-26","2023-01-27","2023-01-28","2023-01-29","2023-01-30","2023-01-31"]
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Delay Minutes'
+            },
+            series: [{
+                data: [483,1031,1347,446,313,14,125,77,994,59,3342,484,454,97,302,273,288,183,643,411,479,799,290,739,606,1783,343,26,1348,677,727],
+                type: 'bar',
+                name: 'Delay Minutes'
+            }]
+        };
+
+        myChart.setOption(option);
+    </script>
+</body>
+</html>
