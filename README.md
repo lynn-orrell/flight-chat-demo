@@ -42,7 +42,9 @@ Flight Chat Demo is an interactive application that allows users to query and an
 
 - **FlightInfoService**: Provides the data API for flights, airports, and weather. This service must be running to supply data. 
   - Note: FlightInfoService may take some time to start up due to the large volume of flight data it exposes (all US flights from 2023).
-- **FlightChat**: Provides the chat interface that uses AI to query the data from FlightInfoService. This service must also be running for the full demo experience.
+- **FlightChat.Console**: Provides the console-based chat interface that uses AI to query the data from FlightInfoService. This service must also be running for the full demo experience.
+- **FlightChat.Web**: Provides a web-based chat interface for interacting with the FlightInfoService.
+- **FlightChat.GroupChat**: Handles group chat functionality and is used by the FlightChat.Web and FlightChat.Console projects to enable multi-agent conversations.
 
 ## Running the Demo
 
@@ -51,26 +53,32 @@ To get the full value from the demo, you need to run both FlightInfoService (the
 ### Visual Studio
 
 1. Set `FlightInfoService` as the startup project and run (F5 or Ctrl+F5).
-2. In a new Visual Studio instance or after the first is running, set `FlightChat` as the startup project and run.
+2. In a new Visual Studio instance or after the first is running, set `FlightChat.Console` as the startup project and run.
 
 ### VS Code / Terminal
 
-- A `.vscode/launch.json` file is included with pre-configured debug launch settings for both `FlightInfoService` and `FlightChat`. You can use the Run and Debug panel in VS Code to start either project directly.
+- A `.vscode/launch.json` file is included with pre-configured debug launch settings for `FlightInfoService`, `FlightChat.Console` and `FlightChat.Web`. You can use the Run and Debug panel in VS Code to start any of the projects directly.
 
 1. Open the Run and Debug panel (Ctrl+Shift+D) in VS Code.
 2. Select **C#: FlightInfoService Debug** and start it.
-3. Open a new debug session, select **C#: FlightChat Debug**, and start it as well.
+3a. If running the console app, open a new debug session, select **C#: FlightChat.Console Debug**, and start it as well.
+3b. If running the web app, select **C#: FlightChat.Web Debug** and start it. This will open a browser window with the web chat interface.
 
-Alternatively, you can run both from the terminal in separate terminals:
+Alternatively, you can run these from the terminal in separate terminals:
 
 1. To run the FlightInfoService:
    ```sh
    cd FlightInfoService
    dotnet run
    ```
-2. To run the FlightChat project:
+2. To run the FlightChat.Console project:
    ```sh
-   cd ../FlightChat
+   cd ../FlightChat.Console
+   dotnet run
+   ```
+3. To run the FlightChat.Web project:
+   ```sh
+   cd ../FlightChat.Web
    dotnet run
    ```
 

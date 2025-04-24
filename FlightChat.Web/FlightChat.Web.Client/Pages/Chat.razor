@@ -1,0 +1,248 @@
+@page "/"
+@rendermode InteractiveWebAssembly
+@using FlightChat.Web.Client.Layout
+@using FlightChat.Web.Shared.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.AI
+@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<script>
+function scrollToBottom() {
+    const chatContainer = document.getElementById("conversation");
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+
+function renderMarkdown(elementId, markdownContent) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = marked.parse(markdownContent);
+    }
+}
+
+function focusTextarea() {
+    const textarea = document.querySelector("textarea.input-lg");
+    if (textarea) {
+        textarea.focus();
+    }
+}
+</script>
+<PageTitle>Chat</PageTitle>
+
+<ContentLoading>
+    <div class="chat-page">
+        
+        <div class="info-boxes">
+            <div class="info-box @(isODataQueryBuilderActive ? "glow" : "")">
+                <div class="info-box-title">OData Query Builder Agent</div>
+                <div class="info-box-description">
+                    The OData Query Builder Agent is responsible for building an OData query based on the user’s request combined with its knowledge of an OpenAPI spec.
+                </div>
+            </div>
+            <div class="info-box @(isMarkdownFormatterActive ? "glow" : "")">
+                <div class="info-box-title">Markdown Formatter Agent</div>
+                <div class="info-box-description">
+                    The Markdown Formatter Agent is responsible for taking any data that is retrieved and formatting it into markdown, if necessary.
+                </div>
+            </div>
+            <div class="info-box @(isChartVisualizerActive ? "glow" : "")">
+                <div class="info-box-title">Chart Visualizer Agent</div>
+                <div class="info-box-description">
+                    The Chart Visualizer Agent is responsible for taking any data that has been retrieved and, if the user requests it, visualizing the data into an Apache ECharts chat.
+                </div>
+            </div>
+        </div>
+
+        <div id="conversation" class="chat-container">
+            @foreach (var message in messages)
+            {
+                if(message.Value.NotificationType == NotificationType.SpeakerChange)
+                {
+                    <div class="chat-bubble speakerchange">
+                        <strong>@message.Value.Text</strong> will now take a turn to speak.                    
+                    </div>
+                }
+                else if (message.Value.NotificationType == NotificationType.AgentGroupChatTerminationUpdate)
+                {
+                    <div class="chat-bubble agentgroupchatterminationupdate">
+                        @message.Value.Text
+                    </div>
+                }
+                else {
+                    <div id="@message.Value.MessageId" class="chat-bubble @message.Value.NotificationType.ToString().ToLower()">
+                        @message.Value.Text
+                    </div>
+                }
+            }
+        </div>
+
+        <form class="chat-message" @onsubmit="HandleSubmit">
+            <textarea class="input-lg" placeholder="Talk to me!" @bind-value="@messageInput" @bind-value:event="oninput" @onkeydown="HandleKeyDown" disabled="@isAgentProcessing"></textarea>
+            <button type="submit" class="btn btn-default" disabled="@(!IsConnected || isAgentProcessing)">Send</button>
+        </form>
+    </div>
+</ContentLoading>
+
+@code {
+    private HubConnection? hubConnection;
+    private Dictionary<string, ConversationNotification> messages = [];
+    private string? messageInput;
+    private bool shouldScrollToBottom = true;
+    private string? renderMarkdownId;
+    private bool isConnected = false;
+    private bool isAgentProcessing = false;
+    private bool isODataQueryBuilderActive = false;
+    private bool isMarkdownFormatterActive = false;
+    private bool isChartVisualizerActive = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+        .Build();
+
+        hubConnection.On<ConversationNotification>("ReceiveMessage", async (conversationNotification) =>
+        {
+            if (string.IsNullOrEmpty(conversationNotification.MessageId) || string.IsNullOrEmpty(conversationNotification.Text))
+            {
+                return;
+            }
+
+            if(messages.ContainsKey(conversationNotification.MessageId))
+            {
+                messages[conversationNotification.MessageId].AddTextChunk(conversationNotification.Text);
+            }
+            else
+            {
+                messages.Add(conversationNotification.MessageId, conversationNotification);
+            }
+            
+            shouldScrollToBottom = true;
+            renderMarkdownId = conversationNotification.MessageId;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<ConversationNotification>("SpeakerChange", async (conversationNotification) =>
+        {
+            if (conversationNotification != null && string.IsNullOrEmpty(conversationNotification.Text))
+            {
+                return;
+            }
+
+            ToggleGlow(conversationNotification!.Text);
+            messages.Add(Guid.NewGuid().ToString(), conversationNotification);
+            
+            shouldScrollToBottom = true;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<ConversationNotification>("AgentGroupChatTerminationUpdate", async (conversationNotification) =>
+        {
+            if (conversationNotification != null && string.IsNullOrEmpty(conversationNotification.Text))
+            {
+                return;
+            }
+
+            messages.Add(Guid.NewGuid().ToString(), conversationNotification!);
+            
+            shouldScrollToBottom = true;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<ConversationNotification>("AgentGroupChatComplete", async (conversationNotification) =>
+        {
+            isAgentProcessing = false;
+            GlowOff();
+            await InvokeAsync(StateHasChanged);
+            await JSRuntime.InvokeVoidAsync("focusTextarea");
+        });
+
+        await hubConnection.StartAsync();        
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shouldScrollToBottom)
+        {
+            shouldScrollToBottom = false;
+            await JSRuntime.InvokeVoidAsync("scrollToBottom");
+        }
+
+        if(!string.IsNullOrEmpty(renderMarkdownId))
+        {
+            await JSRuntime.InvokeVoidAsync("renderMarkdown", renderMarkdownId, messages[renderMarkdownId].Text);
+            renderMarkdownId = string.Empty;
+        }
+    }
+
+    private async Task SendAsync(string message)
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("SendMessage", message);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!string.IsNullOrWhiteSpace(messageInput))
+        {
+            isAgentProcessing = true;
+            await SendAsync(messageInput);
+            var messageId = Guid.NewGuid().ToString();
+            messages.Add(messageId, new ConversationNotification(NotificationType.UserMessage, messageId, messageInput));
+            messageInput = string.Empty; // Clear the input after sending
+
+            shouldScrollToBottom = true;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" && !e.ShiftKey) // Check if "Enter" is pressed without "Shift" to allow for newlines
+        {
+            await HandleSubmit();
+        }
+    }
+
+    private void ToggleGlow(string boxName)
+    {
+        GlowOff();
+
+        switch (boxName)
+        {
+            case "ODataQueryBuilder":
+                isODataQueryBuilderActive = !isODataQueryBuilderActive;
+                break;
+            case "MarkdownFormatter":
+                isMarkdownFormatterActive = !isMarkdownFormatterActive;
+                break;
+            case "ChartVisualizer":
+                isChartVisualizerActive = !isChartVisualizerActive;
+                break;
+        }
+    }
+
+    private void GlowOff()
+    {
+        isODataQueryBuilderActive = false;
+        isMarkdownFormatterActive = false;
+        isChartVisualizerActive = false;
+    }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

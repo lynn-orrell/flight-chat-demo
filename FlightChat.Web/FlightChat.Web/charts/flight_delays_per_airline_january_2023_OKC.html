@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Delays per Airline in January 2023 (OKC)</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        #chart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        var chartDom = document.getElementById('chart');
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        option = {
+            title: {
+                text: 'Flight Delays per Airline in January 2023 (OKC)'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: ['AirlineA', 'AirlineB', 'AirlineC'],
+                name: 'Airline'
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Number of Delays'
+            },
+            series: [
+                {
+                    data: [15, 20, 5],
+                    type: 'bar',
+                    name: 'Delays'
+                }
+            ]
+        };
+
+        option && myChart.setOption(option);
+
+    </script>
+</body>
+</html>

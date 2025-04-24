@@ -13,13 +13,30 @@
             "preLaunchTask": "dotnet: build"
         },
         {
-            "name": "C#: FlightChat Debug",
+            "name": "C#: FlightChat.Console Debug",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/FlightChat/bin/debug/net8.0/FlightChat.dll",
-            "cwd": "${workspaceFolder}/FlightChat",
+            "program": "${workspaceFolder}/FlightChat.Console/bin/debug/net9.0/FlightChat.Console.dll",
+            "cwd": "${workspaceFolder}/FlightChat.Console",
             "preLaunchTask": "dotnet: build",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "C#: FlightChat.Web Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/FlightChat.Web/FlightChat.Web/bin/debug/net9.0/FlightChat.Web.dll",
+            "args": [ "--urls", "http://localhost:7194" ],
+            "cwd": "${workspaceFolder}/FlightChat.Web/FlightChat.Web",
+            "preLaunchTask": "Build FlightChat.Web",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
         }
     ]
 }

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build FlightChat.Web",
+        "command": "dotnet",
+        "type": "process",
+        "args": [
+          "build",
+          "${workspaceFolder}/FlightChat.Web/FlightChat.Web/FlightChat.Web.csproj"
+        ],
+        "problemMatcher": "$msCompile"
+      }
+    ]
+  }
