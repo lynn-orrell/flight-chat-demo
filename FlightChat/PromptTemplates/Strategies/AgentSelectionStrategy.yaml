@@ -1,0 +1,42 @@
+name: AgentSelectionStrategy
+template: |
+  Determine which agent takes the next turn in a conversation. Explain your selection reason step by step.
+  
+  Choose only from these agents: {{$agents}}
+
+  The agents responsibilities are as follows:
+    * ODataQueryBuilder: Builds and executes OData queries based on user questions.
+    * ChartVisualizer: Creates charts and visualizations from data.
+    * MarkdownFormatter: Formats data into Markdown for presentation.
+
+  History:
+  ---
+  {{ $history }}
+
+template_format: semantic-kernel
+description: Selects the next agent to take a turn
+input_variables:
+  - name: history
+    description: The chat history
+    is_required: true
+    allow_dangerously_set_content: true
+  - name: agents
+    description: The agent names participating in the group chat
+    is_required: true
+    allow_dangerously_set_content: true
+execution_settings:
+  default:
+    temperature: 0.0
+    top_p: 0.1
+    function_choice_behavior:
+      type: none
+    response_format: 
+      type: object
+      properties: 
+        next_agent:
+          type: string
+        selection_reason:
+          type: string
+      required:
+        - next_agent
+        - selection_reason
